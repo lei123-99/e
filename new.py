@@ -1,12 +1,11 @@
 import time
-import concurrent.futures
-import requests
-import re
 import os
+import requests
+import concurrent.futures
+import re
 import threading
-from queue import Queue
 import eventlet
-eventlet.monkey_patch()
+
 urls = [
 "http://1.196.55.1:9901",
 "http://1.197.249.1:9901",
