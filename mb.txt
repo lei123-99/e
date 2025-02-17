@@ -1,11 +1,9 @@
 央视频道,#genre#
-CCTV4K
 CCTV1
 CCTV2
 CCTV3
 CCTV4
 CCTV5
-CCTV5+
 CCTV6
 CCTV7
 CCTV8
@@ -16,7 +14,7 @@ CCTV12
 CCTV13
 CCTV14
 CCTV15
-CCTV16
+CCTV5+
 CCTV17
 CHC家庭影院
 CHC影迷电影
@@ -68,10 +66,3 @@ CCTV电视指南
 深圳卫视
 兵团卫视
 三沙卫视
-凤凰资讯
-凤凰中文
-其它频道,#genre#
-中国天气
-乐游
-车迷频道
-重庆汽摩
