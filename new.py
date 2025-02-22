@@ -6,7 +6,9 @@ import os
 import threading
 from queue import Queue
 import eventlet
+
 eventlet.monkey_patch()
+
 urls = [
 "http://1.196.55.1:9901",
 "http://1.197.249.1:9901",
@@ -152,7 +154,8 @@ urls = [
 "http://61.136.67.1:50085",
 "http://61.156.228.1:8154",
 "http://61.173.144.1:9901"
-    ]
+]
+
 def modify_urls(url):
     modified_urls = []
     ip_start_index = url.find("//") + 2
@@ -166,6 +169,7 @@ def modify_urls(url):
         modified_url = f"{base_url}{modified_ip}{port}{ip_end}"
         modified_urls.append(modified_url)
     return modified_urls
+
 def is_url_accessible(url):
     try:
         response = requests.get(url, timeout=0.5)
@@ -174,8 +178,10 @@ def is_url_accessible(url):
     except requests.exceptions.RequestException:
         pass
     return None
+
 results = []
 x_urls = []
+
 for url in urls:  # 对urls进行处理，ip第四位修改为1，并去重
     url = url.strip()
     ip_start_index = url.find("//") + 2
@@ -190,9 +196,11 @@ for url in urls:  # 对urls进行处理，ip第四位修改为1，并去重
     modified_ip = f"{ip_address}{ip_end}"
     x_url = f"{base_url}{modified_ip}{port}"
     x_urls.append(x_url)
+
 urls = set(x_urls)  # 去重得到唯一的URL列表
 valid_urls = []
-#   多线程获取可用url
+
+# 多线程获取可用url
 with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
     futures = []
     for url in urls:
@@ -204,8 +212,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         result = future.result()
         if result:
             valid_urls.append(result)
+
 for url in valid_urls:
     print(url)
+
 # 遍历网址列表，获取JSON文件并解析
 for url in valid_urls:
     try:
@@ -226,8 +236,7 @@ for url in valid_urls:
                     name = item.get('name')
                     urlx = item.get('url')
                     if ',' in urlx:
-                        urlx=f"aaaaaaaa"
-                    #if 'http' in urlx or 'udp' in urlx or 'rtp' in urlx:
+                        urlx = f"aaaaaaaa"
                     if 'http' in urlx:
                         urld = f"{urlx}"
                     else:
@@ -282,17 +291,21 @@ for url in valid_urls:
             continue
     except:
         continue
+
 channels = []
 for result in results:
     line = result.strip()
     if result:
         channel_name, channel_url = result.split(',')
         channels.append((channel_name, channel_url))
+
 # 线程安全的队列，用于存储下载任务
 task_queue = Queue()
+
 # 线程安全的列表，用于存储结果
 results = []
 error_channels = []
+
 # 定义工作线程函数
 def worker():
     while True:
@@ -300,14 +313,14 @@ def worker():
         channel_name, channel_url = task_queue.get()
         try:
             channel_url_t = channel_url.rstrip(channel_url.split('/')[-1])  # m3u8链接前缀
-            lines = requests.get(channel_url, timeout = 1).text.strip().split('\n')  # 获取m3u8文件内容
+            lines = requests.get(channel_url, timeout=1).text.strip().split('\n')  # 获取m3u8文件内容
             ts_lists = [line.split('/')[-1] for line in lines if line.startswith('#') == False]  # 获取m3u8文件下视频流后缀
             ts_lists_0 = ts_lists[0].rstrip(ts_lists[0].split('.ts')[-1])  # m3u8链接前缀
             ts_url = channel_url_t + ts_lists[0]  # 拼接单个视频片段下载链接
             # 多获取的视频数据进行5秒钟限制
             with eventlet.Timeout(5, False):
                 start_time = time.time()
-                content = requests.get(ts_url, timeout = 1).content
+                content = requests.get(ts_url, timeout=1).content
                 end_time = time.time()
                 response_time = (end_time - start_time) * 1
             if content:
@@ -332,26 +345,33 @@ def worker():
             print(f"可用频道：{len(results)} 个 , 不可用频道：{len(error_channels)} 个 , 总频道：{len(channels)} 个 ,总进度：{numberx:.2f} %。")
         # 标记任务完成
         task_queue.task_done()
+
 # 创建多个工作线程
 num_threads = 10
 for _ in range(num_threads):
     t = threading.Thread(target=worker, daemon=True)  # 将工作线程设置为守护线程
     t.start()
+
 # 添加下载任务到队列
 for channel in channels:
     task_queue.put(channel)
+
 # 等待所有任务完成
 task_queue.join()
+
 def channel_key(channel_name):
     match = re.search(r'\d+', channel_name)
     if match:
         return int(match.group())
     else:
         return float('inf')  # 返回一个无穷大的数字作为关键字
+
 # 对频道进行排序
 results.sort(key=lambda x: (x[0], -float(x[2].split()[0])))
 results.sort(key=lambda x: channel_key(x[0]))
+
 result_counter = 8  # 每个频道需要的个数
+
 with open("itvlist.txt", 'w', encoding='utf-8') as file:
     channel_counters = {}
     file.write('央视频道,#genre#\n')
@@ -395,6 +415,7 @@ with open("itvlist.txt", 'w', encoding='utf-8') as file:
             else:
                 file.write(f"{channel_name},{channel_url}\n")
                 channel_counters[channel_name] = 1
+
 with open("itvlist.m3u", 'w', encoding='utf-8') as file:
     channel_counters = {}
     file.write('#EXTM3U\n')
@@ -413,7 +434,6 @@ with open("itvlist.m3u", 'w', encoding='utf-8') as file:
                 file.write(f"{channel_url}\n")
                 channel_counters[channel_name] = 1
     channel_counters = {}
-    #file.write('卫视频道,#genre#\n')
     for result in results:
         channel_name, channel_url, speed = result
         if '卫视' in channel_name:
@@ -429,7 +449,6 @@ with open("itvlist.m3u", 'w', encoding='utf-8') as file:
                 file.write(f"{channel_url}\n")
                 channel_counters[channel_name] = 1
     channel_counters = {}
-    #file.write('其他频道,#genre#\n')
     for result in results:
         channel_name, channel_url, speed = result
         if 'CCTV' not in channel_name and '卫视' not in channel_name and '测试' not in channel_name:
@@ -444,7 +463,19 @@ with open("itvlist.m3u", 'w', encoding='utf-8') as file:
                 file.write(f"#EXTINF:-1 group-title=\"其他频道\",{channel_name}\n")
                 file.write(f"{channel_url}\n")
                 channel_counters[channel_name] = 1
-with open(f'df.txt', 'r', encoding='utf-8') as file,open(txt_filename, 'a') as new_file:
-    txt_filename = 'output.txt'
-    data = file.read()
-    new_file.write(data)
+
+# 打开 df.txt 文件并读取内容
+try:
+    with open("df.txt", 'r', encoding='utf-8') as df_file:
+        df_content = df_file.read()  # 读取 df.txt 的全部内容
+
+    # 将 df.txt 的内容追加到 itvlist.txt 文件的末尾
+    with open("itvlist.txt", 'a', encoding='utf-8') as itv_file:
+        itv_file.write('\n')  # 添加一个换行符，确保新内容与原有内容分开
+        itv_file.write(df_content)  # 写入 df.txt 的内容
+
+    print("df.txt 的内容已成功追加到 itvlist.txt 文件中。")
+except FileNotFoundError:
+    print("df.txt 文件未找到，请确保文件存在。")
+except Exception as e:
+    print(f"写入时发生错误: {e}")
